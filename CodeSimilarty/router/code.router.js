@@ -21,13 +21,13 @@ router.post(
   upload.single("codeFile"),
   async (req, res) => {
     try {
-    
+
       let { code, studentName } = req.body;
 
-     
+
       if (req.file) {
         code = fs.readFileSync(req.file.path, "utf8");
-        fs.unlinkSync(req.file.path); 
+        fs.unlinkSync(req.file.path);
       }
 
       if (!code || !studentName) {
@@ -36,18 +36,20 @@ router.post(
           .json({ error: "please input code or file and enter studentName" });
       }
 
-     
+
       const fileName = `${studentName}.js`;
       const filePath = path.join(uploadDir, fileName);
 
       fs.writeFileSync(filePath, code, "utf8");
 
-      
+
       await studentCode.findOneAndUpdate(
         { studentName: studentName },
         { codeContent: code },
-        { upsert: true, 
-          returnDocument: "after" },
+        {
+          upsert: true,
+          returnDocument: "after"
+        },
       );
 
       const allFiles = fs
@@ -55,7 +57,7 @@ router.post(
         .filter((f) => f.endsWith(".js"));
       const fileCount = allFiles.length;
 
-      
+
       const codesData = allFiles.map((file, index) => {
         const content = fs.readFileSync(path.join(uploadDir, file), "utf8");
         return {
@@ -66,9 +68,9 @@ router.post(
       });
 
       let matrixResults = [];
-      let averages = []; 
+      let averages = [];
 
-     
+
       for (let i = 0; i < codesData.length; i++) {
         let totalSimilarityForStudent = 0;
 
@@ -102,7 +104,7 @@ router.post(
           });
         }
 
-       
+
         const avg =
           codesData.length > 1
             ? (totalSimilarityForStudent / (codesData.length - 1)).toFixed(2)
@@ -110,7 +112,7 @@ router.post(
         averages.push({ student: codesData[i].name, averageSimilarity: avg });
       }
 
-      
+
       if (fileCount >= requiredCodes) {
         return res.json({
           message: `Success ❤ ${requiredCodes} codes reached. Comparison completed.`,
@@ -118,7 +120,7 @@ router.post(
           required: requiredCodes,
           autoCompare: true,
           matrix: matrixResults,
-          studentAverages: averages, 
+          studentAverages: averages,
         });
       }
 
@@ -177,7 +179,7 @@ router.get("/compare-stored", (req, res) => {
   res.json({
     matrix: matrixResults,
     size: files.length,
-    students: students, 
+    students: students,
   });
 });
 
